@@ -1,0 +1,14 @@
+[
+  {
+    "ID": 1,
+    "LOCATION_ID": 1,
+    "DATA_TIMESTAMP": "2026-03-05T00:49:27",
+    "WIND_SPEED": 3.1,
+    "WIND_DIRECTION": 135.0,
+    "WAVE_HEIGHT": null,
+    "PRESSURE": null,
+    "SEA_TEMP": null,
+    "CURRENT_SPEED": null,
+    "CREATED_AT": "2026-03-04T21:49:27"
+  }
+]

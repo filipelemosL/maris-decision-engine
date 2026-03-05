@@ -1,34 +1,33 @@
-# infrastructure/external/open_meteo_provider.py
-
 import requests
 from datetime import datetime
 from domain.entities.weather import Weather
-from domain.interfaces.weather_provider import WeatherProvider
 
+class OpenMeteoProvider:
 
-class OpenMeteoProvider(WeatherProvider):
+    URL = "https://api.open-meteo.com/v1/forecast"
 
-    def fetch(self, latitude: float, longitude: float) -> Weather:
-
-        url = "https://marine-api.open-meteo.com/v1/marine"
+    def get_weather(self, lat, lon):
 
         params = {
-            "latitude": latitude,
-            "longitude": longitude,
-            "hourly": "wave_height,sea_surface_temperature",
+            "latitude": lat,
+            "longitude": lon,
             "current_weather": True,
-            "timezone": "auto"
+            "hourly": "pressure_msl"
         }
 
-        response = requests.get(url, params=params)
+        response = requests.get(self.URL, params=params)
         data = response.json()
 
-        return Weather(
+        current = data["current_weather"]
+
+        weather = Weather(
             timestamp=datetime.utcnow(),
-            wind_speed=data["current_weather"]["windspeed"],
-            wind_direction=data["current_weather"]["winddirection"],
-            wave_height=data["hourly"]["wave_height"][0],
-            pressure=data["current_weather"].get("pressure"),
-            sea_temp=data["hourly"]["sea_surface_temperature"][0],
+            wind_speed=current["windspeed"],
+            wind_direction=current["winddirection"],
+            wave_height=None,
+            pressure=None,
+            sea_temp=None,
             current_speed=None
         )
+
+        return weather

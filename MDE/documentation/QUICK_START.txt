@@ -1,0 +1,290 @@
+================================================================================
+⚡ GUIA RÁPIDO - 3 PASSOS PARA RODAR A API + INTEGRAR COM VERCEL
+================================================================================
+
+📅 Data: 2026-03-05
+🎯 Objetivo: API rodando 24/7 + Frontend no Vercel consumindo dados
+
+================================================================================
+PASSO 1: MANTER A API RODANDO (escolha 1 opção)
+================================================================================
+
+🥇 OPÇÃO A: PM2 (Recomendado - Mais fácil)
+────────────────────────────────────────
+
+1. Instalar PM2 globalmente:
+   $ npm install pm2 -g
+
+2. No diretório do projeto, ativar venv:
+   $ .venv\Scripts\Activate.ps1
+
+3. Iniciar API com PM2:
+   $ pm2 start api_producao.py --name "mde-api" --interpreter "python"
+
+4. Configurar para iniciar ao boot:
+   $ pm2 save
+   $ pm2 startup
+
+✅ Pronto! API rodará sempre em background, reinicia se cair, 
+   inicia automático ao ligar o Windows.
+
+Comandos úteis:
+- pm2 list          # Ver status
+- pm2 logs mde-api  # Ver logs
+- pm2 stop mde-api  # Parar
+- pm2 restart mde-api # Reiniciar
+
+────────────────────────────────────────
+
+🥈 OPÇÃO B: Apenas um Terminal (Simples)
+────────────────────────────────────────
+
+1. Abrir PowerShell na pasta do projeto
+
+2. Ativar venv:
+   $ .venv\Scripts\Activate.ps1
+
+3. Iniciar API:
+   $ python start_api.py
+
+✅ API rodará enquanto a janela estiver aberta.
+   (Deixar a janela aberta no Windows)
+
+────────────────────────────────────────
+
+🥉 OPÇÃO C: Task Scheduler (Automático no Boot)
+────────────────────────────────────────
+
+1. Criar arquivo: start_api.bat
+   Conteúdo:
+   @echo off
+   cd C:\Users\Filipe\Desktop\MDE-REPO\maris-decision-engine\MDE
+   .venv\Scripts\Activate.ps1
+   python api_producao.py
+   pause
+
+2. Abrir Task Scheduler (pesquisar no Windows)
+
+3. criar Nova Tarefa:
+   - Nome: "Maris Decision Engine API"
+   - Trigger: "At startup" ou "At log on"
+   - Action: C:\path\para\start_api.bat
+
+✅ API iniciará automaticamente ao ligar o Windows
+
+════════════════════════════════════════════════════════════════════════════
+
+PASSO 2: ACESSAR API DE FORMA PÚBLICA (Escolha 1 opção)
+════════════════════════════════════════════════════════════════════════════
+
+Se a máquina está na sua rede local ou escritório:
+
+🥇 OPÇÃO A: ngrok (Mais fácil, Temporária)
+────────────────────────────────────────
+
+1. Download: https://ngrok.com/download
+
+2. Extrair e abrir terminal ali
+
+3. Executar:
+   $ ./ngrok http 5000
+
+4. Será exibida uma URL pública:
+   Forwarding    https://xxxx-yyyy-zzzz.ngrok.io -> http://localhost:5000
+
+5. Usar essa URL no seu Vercel! Exemplo:
+   NEXT_PUBLIC_API_URL=https://xxxx-yyyy-zzzz.ngrok.io
+
+⚠️ Problema: URL muda cada vez que reinicia (free plan)
+✅ Vantagem: Muito fácil de usar
+
+────────────────────────────────────────
+
+🥈 OPÇÃO B: IP Local (Se na mesma rede)
+────────────────────────────────────────
+
+1. Descobrir IP local (PowerShell):
+   $ ipconfig
+   
+   Procurar por: IPv4 Address: 192.168.X.X
+
+2. Usar no Vercel:
+   NEXT_PUBLIC_API_URL=http://192.168.X.X:5000
+
+✅ Funciona se Vercel E API estão na mesma rede
+⚠️ Usar http:// (não https) em rede local
+
+────────────────────────────────────────
+
+🥉 OPÇÃO C: Cloud (Melhor para Produção)
+────────────────────────────────────────
+
+Deploy a API para um servidor em nuvem:
+
+- **Render.com** (Grátis) ← Recomendado inicialmente
+- **Railway.app** (Grátis)
+- **Heroku** (Pago)
+- **AWS/Azure** (Pago, mais profissional)
+
+Exemplo com Render.com:
+1. Criar conta: https://render.com
+2. Novo "Web Service"
+3. Conectar repo GitHub ou fazer upload
+4. URL pública: https://mde-api-XXXXX.onrender.com
+
+════════════════════════════════════════════════════════════════════════════
+
+PASSO 3: INTEGRAR COM FRONTEND NO VERCEL
+════════════════════════════════════════════════════════════════════════════
+
+🎯 Scenario: Next.js/React hospedado no Vercel
+
+1. Criar arquivo .env.production no seu projeto frontend:
+
+   NEXT_PUBLIC_API_URL=https://seu-api-url.com
+   NEXT_PUBLIC_LOCATION_ID=1
+
+   (trocar por URL do passo 2)
+
+────────────────────────────────────────
+
+2. Criar arquivo src/api/weather.js:
+
+   const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+   export async function getOperationalStatus(locationId = 1) {
+     const res = await fetch(`${API_URL}/api/operational-status/${locationId}`);
+     if (!res.ok) throw new Error('API Error');
+     return res.json();
+   }
+
+   export async function getAllLocationsStatus() {
+     const res = await fetch(`${API_URL}/api/all-locations-status`);
+     if (!res.ok) throw new Error('API Error');
+     return res.json();
+   }
+
+────────────────────────────────────────
+
+3. Usar em um componente:
+
+   import { getOperationalStatus } from '@/api/weather';
+
+   export default function Dashboard() {
+     const [status, setStatus] = useState(null);
+
+     useEffect(() => {
+       getOperationalStatus(1).then(data => {
+         setStatus(data);
+       });
+     }, []);
+
+     if (!status) return <div>Carregando...</div>;
+
+     return (
+       <div>
+         <h2>{status.location.name}</h2>
+         <p>IEA Score: {status.decision.iea_score}</p>
+         <p>Status: {status.decision.operational_status}</p>
+         <p>Pode Operar: {status.decision.is_operational ? 'SIM ✅' : 'NÃO ❌'}</p>
+       </div>
+     );
+   }
+
+────────────────────────────────────────
+
+4. Push para GitHub e deploy no Vercel:
+
+   $ git push                    # Enviar para GitHub
+   
+   No Vercel Dashboard:
+   → Novo projeto
+   → Conectar repo GitHub
+   → Adicionar Environment Variables
+   → Deploy
+
+════════════════════════════════════════════════════════════════════════════
+
+🧪 TESTAR TUDO JUNTO
+════════════════════════════════════════════════════════════════════════════
+
+Terminal 1 (Iniciar API):
+$ .venv\Scripts\Activate.ps1
+$ python api_producao.py
+
+Saída esperada:
+🚀 MARIS DECISION ENGINE - API em PRODUÇÃO
+📡 Servidor: 0.0.0.0:5000
+
+────────────────────────────────────────
+
+Terminal 2 (Testar endpoint):
+$ curl http://localhost:5000/api/health
+
+Resposta esperada:
+{
+  "status": "healthy",
+  "database_connected": true,
+  "timestamp": "2026-03-05T..."
+}
+
+────────────────────────────────────────
+
+Terminal 3 (Frontend local - se tiver):
+$ npm run dev
+
+Acesse: http://localhost:3000
+
+════════════════════════════════════════════════════════════════════════════
+
+🚨 TROUBLESHOOTING
+════════════════════════════════════════════════════════════════════════════
+
+❌ "ModuleNotFoundError: No module named 'flask'"
+→ Ativar venv: .venv\Scripts\Activate.ps1
+
+❌ "ORA-12170: could not connect to Oracle"
+→ Oracle não está rodando. Iniciar Oracle no Windows Services
+
+❌ "CORS error" no Vercel
+→ Adicionar domínio Vercel em api_producao.py:
+  CORS(app, resources={
+    r"/api/*": {
+      "origins": ["https://seu-projeto.vercel.app"],
+    }
+  })
+
+❌ "Connection refused: 127.0.0.1:5000"
+→ API não está rodando. Executar "python api_producao.py"
+
+════════════════════════════════════════════════════════════════════════════
+
+✨ CHECKLIST FINAL
+════════════════════════════════════════════════════════════════════████████
+
+Passos a fazer:
+
+☐ PASSO 1: Escolher opção para manter API rodando (PM2, Terminal ou Scheduler)
+☐ PASSO 2: Escolher forma de acessar (ngrok, IP local ou Cloud)
+☐ PASSO 3: Integrar com frontend Vercel
+☐ Testar: curl http://localhost:5000/api/health
+☐ Testar: Acessar API de forma pública
+☐ Testar: Frontend local consumindo API
+☐ Deploy: Push para GitHub
+☐ Deploy: Vercel puxa e configura env vars
+☐ Sucesso! 🎉
+
+════════════════════════════════════════════════════════════════════════════
+
+📞 RESUMO DAS URLS
+
+API Local:      http://localhost:5000
+API Pública:    https://seu-api-url.com (ngrok ou cloud)
+Frontend Local: http://localhost:3000
+Frontend Prod:  https://seu-projeto.vercel.app
+
+════════════════════════════════════════════════════════════════════════════
+
+🎉 Pronto! Sua aplicação estará completa em produção!
+
+════════════════════════════════════════════════════════════════════════════

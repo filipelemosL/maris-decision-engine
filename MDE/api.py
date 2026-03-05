@@ -23,9 +23,7 @@ def get_connection():
     """Obter conexão com o banco"""
     return oracledb.connect(**DB_CONFIG)
 
-# ============================================================================
-# ENDPOINT 1: Dados brutos por localização
-# ============================================================================
+
 @app.route('/api/weather/raw/<int:location_id>', methods=['GET'])
 def get_raw_weather(location_id):
     """
